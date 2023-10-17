@@ -20,12 +20,13 @@ Implementation based on [kzl](https://github.com/kzl/decision-transformer). Data
 ## Background
 <img src="/public/3agsct.png"/>
 
-Offline reinforcement learning (RL) leverages previously collected data to extract policies that return satisfying performance in online environments. However, offline RL suffers from the distribution shift between the offline dataset and the online environment. In the multi-agent RL (MARL) setting, this distribution shift may arise from the nonstationary opponents (exogenous agents beyond control) in the online testing who display distinct behaviors from those recorded in the offline dataset. Hence, the key to the broader deployment of offline MARL is the online adaptation to nonstationary opponents. Recent advances in large language models have demonstrated the surprising generalization ability of the transformer architecture in sequence modeling, which prompts one to wonder \textit{whether the offline-trained transformer policy adapts to nonstationary opponents during online testing}. This work proposes the self-confirming loss (SCL) in offline transformer training to address the online nonstationarity, which is motivated by the self-confirming equilibrium (SCE) in game theory. The gist is that the transformer learns to predict the opponents' future moves based on which it acts accordingly. As a weaker variant of Nash equilibrium (NE), SCE (equivalently, SCL) only requires local consistency: the agent's local observations do not deviate from its conjectures, leading to a more adaptable policy than the one dictated by NE focusing on global optimality. We evaluate the online adaptability of the self-confirming transformer (SCT) by playing against nonstationary opponents employing a variety of policies, from the random one to the benchmark MARL policies. Experimental results demonstrate that SCT can adapt to nonstationary opponents online, achieving higher returns than vanilla transformers and offline MARL baselines.
+Offline reinforcement learning (RL) leverages previously collected data to extract policies that return satisfying performance in online environments. However, offline RL suffers from the distribution shift between the offline dataset and the online environment. In the multi-agent RL (MARL) setting, this distribution shift may arise from the nonstationary opponents (exogenous agents beyond control) in the online testing who display distinct behaviors from those recorded in the offline dataset. Hence, the key to the broader deployment of offline MARL is the online adaptation to nonstationary opponents. Recent advances in large language models have demonstrated the surprising generalization ability of the transformer architecture in sequence modeling, which prompts one to wonder *whether the offline-trained transformer policy adapts to nonstationary opponents during online testing*. This work proposes the self-confirming loss (SCL) in offline transformer training to address the online nonstationarity, which is motivated by the self-confirming equilibrium (SCE) in game theory. The gist is that the transformer learns to predict the opponents' future moves based on which it acts accordingly. As a weaker variant of Nash equilibrium (NE), SCE (equivalently, SCL) only requires local consistency: the agent's local observations do not deviate from its conjectures, leading to a more adaptable policy than the one dictated by NE focusing on global optimality. We evaluate the online adaptability of the self-confirming transformer (SCT) by playing against nonstationary opponents employing a variety of policies, from the random one to the benchmark MARL policies. Experimental results demonstrate that SCT can adapt to nonstationary opponents online, achieving higher returns than vanilla transformers and offline MARL baselines.
 
 ## Install
 . To create a conda environment and install the requirements:
-```
+```sh
 conda env create -n your_env_name -f conda_env.yml
+```
 
 ## Usage
 
@@ -76,8 +77,8 @@ Feel free to dive in! [Open an issue](https://github.com/NYU-LARX/Self-Confirmin
 Standard Readme follows the [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) Code of Conduct.
 
 ### Contributors ✨
-All authors worked really hard! ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+All authors worked really hard on all aspects of ideation, code, and writing.
 
 
 ## License
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/Panshark/COLA/blob/main/LICENCE) [MIT](https://github.com/Panshark/COLA/blob/main/LICENCE) © NYU Larx Group
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/NYU-LARX/Self-Confirming-Transformer/blob/main/LICENCE.txt) [MIT](https://github.com/NYU-LARX/Self-Confirming-Transformer/blob/main/LICENCE.txt) © NYU Larx Group
