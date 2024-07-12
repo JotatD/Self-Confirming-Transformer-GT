@@ -1,5 +1,7 @@
 import gym 
 import numpy as np
+
+#in this version of the IPD, 0 is for cooperation and 1 is for defection
 class IteratedPrisoner(gym.Env):
     def __init__(self, payoffs=None, horizon=100):
         if payoffs is None:
@@ -11,7 +13,7 @@ class IteratedPrisoner(gym.Env):
             }
         assert payoffs['T'] > payoffs['R'] > payoffs['P'] > payoffs['S'] \
             and 2 * payoffs['R'] > (payoffs['T'] + payoffs['S'])
-
+        self.payoff_dictionary = payoffs
         self.payoffs = self.dictionary_to_matrix(payoffs)
         
         self.horizon = horizon
