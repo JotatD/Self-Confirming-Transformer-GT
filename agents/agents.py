@@ -231,15 +231,15 @@ class Prober(PrisonerAgent):
         self.is_baited = False
     
     def get_action(self):
-        if self.is_baited:
-            return 1
-        else:
-            if len(self.own_history) == 0:
+        if len(self.own_history) == 0:
                 return 1
-            elif len(self.own_history) in [1, 2]:
+        elif len(self.own_history) in [1, 2]:
                 return 0
-            else:
-                return self.opponent_history[-1]
+        elif self.is_baited:
+                return 1
+        else:
+            return self.opponent_history[-1]
+            
     
     def update(self, own_action, opponent_action):
         super().update(own_action, opponent_action)
@@ -263,17 +263,18 @@ class Mem2(PrisonerAgent):
     
     def update(self, own_action, opponent_action):
         super().update(own_action, opponent_action)
+        self.sub_player.update(own_action, opponent_action)
         self.counter += 1
         
         if self.all_d_chosen < 2 and self.counter % 2 == 0 and self.counter > 0:
             p_own_action = self.own_history[-2]
             p_opponent_action = self.opponent_history[-2]
-            own_payoff = self.own_matrix[p_own_action, p_opponent_action] +\
+            own_2_payoff = self.own_matrix[p_own_action, p_opponent_action] +\
                 self.own_matrix[own_action, opponent_action]
 
-            if own_payoff == (2 * self.env_dict['R']):
+            if own_2_payoff == (2 * self.env_dict['R']):
                 self.sub_player = TitForTat()
-            elif own_payoff == (self.env_dict['T'] + self.env_dict['S']):
+            elif own_2_payoff == (self.env_dict['T'] + self.env_dict['S']):
                 self.sub_player = TF2T()
             else:
                 self.sub_player = AllD()

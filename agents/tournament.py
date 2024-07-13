@@ -5,7 +5,8 @@ from functools import partial
 import numpy as np
 import os
 from datetime import datetime
-
+import pickle as pkl
+import json
 
 def game(env, player_1, player_2, game_horizon=100):
     env.reset()    
@@ -66,8 +67,6 @@ def tournament(players, env, n_games=100, game_horizon=100):
             
     
 if __name__ == '__main__':
-    print('hey')
-    env = gym.make('custom_envs.iterated_games.iterated_prisoner:IteratedPrisoner-v0')
     players = {
         'all_d': AllD,
         'all_c': AllC,
@@ -88,18 +87,27 @@ if __name__ == '__main__':
         'prober': Prober,
         'mem2': partial(Mem2, env_dict = env.payoff_dictionary)
     }
+    breakpoint()
+    config = {
+        'players': list(players.keys()),
+        'env': 'custom_envs.iterated_games.iterated_prisoner:IteratedPrisoner-v0',
+        'n_games': 1,
+        'game_horizon': 1000
+    }
+    env = gym.make(config['env'])
+
     
     # create a folder with the current date as name
     export_base = 'pd_dataset/'
     export_folder = os.path.join(export_base, datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
     os.makedirs(export_folder, exist_ok=True)
-    results, player_1_history, player_2_history, player_1_rewards, player_2_rewards = tournament(players=players, env=env, n_games=10, game_horizon=100)
+    results, player_1_history, player_2_history, player_1_rewards, player_2_rewards = tournament(players=players, env=env, n_games=config['n_games'], game_horizon=config['game_horizon'])
     #save results
     np.save(os.path.join(export_folder, 'player_1_history.npy'), player_1_history)
     np.save(os.path.join(export_folder, 'player_2_history.npy'), player_2_history)
     np.save(os.path.join(export_folder, 'player_1_rewards.npy'), player_1_rewards)
     np.save(os.path.join(export_folder, 'player_2_rewards.npy'), player_2_rewards)
-    results.to_csv(os.path.join(export_folder, 'results.csv'))
-
-    
-    
+    with open(os.path.join(export_folder, 'results.pkl'), 'wb') as f:
+        pkl.dump(results, f)
+    with open(os.path.join(export_folder, 'config.json'), 'w') as f:
+        json.dump(config, f, separators=(',', ':'), indent=4)
