@@ -67,6 +67,7 @@ def tournament(players, env, n_games=100, game_horizon=100):
             
     
 if __name__ == '__main__':
+    env = gym.make('custom_envs.iterated_games.iterated_prisoner:IteratedPrisoner-v0')
     players = {
         'all_d': AllD,
         'all_c': AllC,
@@ -87,12 +88,11 @@ if __name__ == '__main__':
         'prober': Prober,
         'mem2': partial(Mem2, env_dict = env.payoff_dictionary)
     }
-    breakpoint()
     config = {
         'players': list(players.keys()),
         'env': 'custom_envs.iterated_games.iterated_prisoner:IteratedPrisoner-v0',
-        'n_games': 1,
-        'game_horizon': 1000
+        'n_games': 100,
+        'game_horizon': 100
     }
     env = gym.make(config['env'])
 
@@ -103,10 +103,10 @@ if __name__ == '__main__':
     os.makedirs(export_folder, exist_ok=True)
     results, player_1_history, player_2_history, player_1_rewards, player_2_rewards = tournament(players=players, env=env, n_games=config['n_games'], game_horizon=config['game_horizon'])
     #save results
-    np.save(os.path.join(export_folder, 'player_1_history.npy'), player_1_history)
-    np.save(os.path.join(export_folder, 'player_2_history.npy'), player_2_history)
-    np.save(os.path.join(export_folder, 'player_1_rewards.npy'), player_1_rewards)
-    np.save(os.path.join(export_folder, 'player_2_rewards.npy'), player_2_rewards)
+    np.save(os.path.join(export_folder, 'acs_0.npy'), player_1_history)
+    np.save(os.path.join(export_folder, 'acs_1.npy'), player_2_history)
+    np.save(os.path.join(export_folder, 'rews_0.npy'), player_1_rewards)
+    np.save(os.path.join(export_folder, 'rews_1.npy'), player_2_rewards)
     with open(os.path.join(export_folder, 'results.pkl'), 'wb') as f:
         pkl.dump(results, f)
     with open(os.path.join(export_folder, 'config.json'), 'w') as f:
