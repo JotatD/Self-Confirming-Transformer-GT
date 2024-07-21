@@ -71,12 +71,9 @@ def experiment(
     num_eval_episodes = variant['num_eval_episodes']
     #GET CONFIGS, HERE WE GET THE ENVIRONMENT ENV
     if env_name == "iterated_prisoner":
-        env_batch = BatchMultiAgentEnv([gym.make('custom_envs.iterated_games.iterated_prisoner:IteratedPrisoner-v0') for i in range(num_eval_episodes)])
         cur_agents = 1
         opo_agents = 1
         ep_len = 100
-        obs_space = 0
-        act_space = 2
         state_dim = 0
         adv_agents = 1
         K = 100
@@ -162,7 +159,7 @@ def experiment(
             i = int(i)
             trajectory = trajectories[i]
             # GENERATE RANDOM INDICES FOR THE TIMESTEPS
-            si = random.randint(0, trajectory['rewards'].shape[0]-K)
+            si = random.randint(0, trajectory['rewards'].shape[0]-1)
 
             # GET STATE ACTION AND REWARD SEQUENCES
             opo_a.append(trajectory['opo_acts'][si:si + max_len].reshape(1, -1, 1, act_dim))
@@ -180,8 +177,8 @@ def experiment(
                 rtg[-1] = np.concatenate([rtg[-1], np.zeros((1, 1, 1))], axis=1)
             
             # PAD WITH 0s AND THEN NORMALIZE
-            opo_a[-1] = np.concatenate([np.ones((1, max_len - tlen, 1, temp_act_dim)) * -10., opo_a[-1]], axis=1)
-            cur_a[-1] = np.concatenate([np.ones((1, max_len - tlen, adv_agents, temp_act_dim)) * -10., cur_a[-1]], axis=1)
+            opo_a[-1] = np.concatenate([np.ones((1, max_len - tlen, 1, temp_act_dim)) * 2, opo_a[-1]], axis=1)
+            cur_a[-1] = np.concatenate([np.ones((1, max_len - tlen, adv_agents, temp_act_dim)) * 2, cur_a[-1]], axis=1)
             # PAD WITH 0 THE REWARDS
             r[-1] = np.concatenate([np.zeros((1, max_len - tlen, 1)), r[-1]], axis=1)
             
@@ -221,12 +218,12 @@ def experiment(
         p2_actions = np.zeros((n_games, 100))
         env = gym.make('custom_envs.iterated_games.iterated_prisoner:IteratedPrisoner-v0')
         for i in range(n_games):
-            print('game', i)
             dt_c.reset_memory()
             _, acts_p2, rews1, _, preds= game(env, dt_c, oponent, game_horizon=100)
             total_rewards[i] = rews1
             model_preds[i] = preds
             p2_actions[i] = acts_p2
+            print(f"game {i} = {rews1.sum()}")            
         return {
             'rewards_against_TFT': np.sum(total_rewards),
             'accuracy': np.mean(model_preds == p2_actions),
@@ -274,11 +271,16 @@ def experiment(
     #################OPTIMIZER AND SCHEDULER####################
     ws = np.array(variant['ws'])
     from torch.nn.functional import cross_entropy
-    from torch.nn.functional import softmax
+    
+    
+    
     def weighted_loss_fn(oa_hat, ca_hat, r_hat, oa, ca, r):
-        return  ws[0]*cross_entropy(softmax(oa_hat), oa.squeeze(1)) +\
-                ws[1]*cross_entropy(softmax(ca_hat), ca.squeeze(1)) +\
+        return  ws[0]*cross_entropy(oa_hat, oa.squeeze(1)) +\
+                ws[1]*cross_entropy(ca_hat, ca.squeeze(1)) +\
                 ws[2]*torch.mean((r_hat-r)**2)
+                
+                
+                
     ###############TRAINER#######################
     if model_type == 'dt':
         trainer = SequenceTrainer(

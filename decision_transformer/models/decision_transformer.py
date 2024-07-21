@@ -47,8 +47,8 @@ class DecisionTransformer(TrajectoryModel):
         
         self.is_discrete = is_discrete
         self.act_space = action_space
-        self.embed_curact = nn.Embedding(self.act_space, self.hidden_size)
-        self.embed_opoact = nn.Embedding(self.act_space, self.hidden_size)
+        self.embed_curact = nn.Embedding(self.act_space+1, self.hidden_size)
+        self.embed_opoact = nn.Embedding(self.act_space+1, self.hidden_size)
         self.embed_ln = nn.LayerNorm(self.hidden_size)
 
         self.opo_type = opo_type
@@ -71,7 +71,6 @@ class DecisionTransformer(TrajectoryModel):
             attention_mask = torch.ones((batch_size, seq_length), dtype=torch.long)
 
         # embed each modality with a different head
-        
         curact_embeddings = self.embed_curact(curacts).reshape(batch_size, seq_length, cur_agents, self.hidden_size)
         # print(opoacts.reshape(-1))
         opoact_embeddings = self.embed_opoact(opoacts).reshape(batch_size, seq_length, opo_agents, self.hidden_size)
@@ -125,10 +124,9 @@ class DecisionTransformer(TrajectoryModel):
     def get_action(self, returns_to_go, opoacts, curacts, timesteps, rewards=0,  **kwargs):
         if self.max_length is not None:
             returns_to_go = returns_to_go[:,-self.max_length:]
-            opoacts = opoacts[:, -self.max_length:]
-            curacts = curacts[:,-self.max_length:]
+            opoacts = opoacts[:, -self.max_length:].to(dtype=torch.int64)
+            curacts = curacts[:,-self.max_length:].to(dtype=torch.int64)
             timesteps = timesteps[:,-self.max_length:]
-
             tlen =  self.max_length-opoacts.shape[1]
             # pad all tokens to sequence length
             
@@ -136,14 +134,14 @@ class DecisionTransformer(TrajectoryModel):
                 torch.zeros([opoacts.shape[0], tlen]),
                 torch.ones([opoacts.shape[0], opoacts.shape[1]])], dim=1)
             attention_mask = attention_mask.to(dtype=torch.long, device=opoacts.device)
-                        
-            opoacts = torch.cat(
-                [torch.zeros((opoacts.shape[0], self.max_length-opoacts.shape[1], opoacts.shape[2], opoacts.shape[3]), device=curacts.device), opoacts],
-                dim=1).to(dtype=torch.int64)
             
-            curacts = torch.cat(
-                [torch.zeros((curacts.shape[0], self.max_length-curacts.shape[1], curacts.shape[2], opoacts.shape[3]), device=curacts.device), curacts],
-                dim=1).to(dtype=torch.int64)
+            shape = list(opoacts.shape)
+            shape[1] = self.max_length-shape[1]
+            opoacts = torch.cat([torch.full(shape, 2, dtype=torch.int64, device=curacts.device), opoacts], dim=1)
+       
+            shape = list(curacts.shape)
+            shape[1] = self.max_length-shape[1]
+            curacts = torch.cat([torch.full(shape, 2, dtype=torch.int64, device=curacts.device), curacts], dim=1)
             
             returns_to_go = torch.cat(
                 [torch.zeros((returns_to_go.shape[0], self.max_length-returns_to_go.shape[1], 1), device=returns_to_go.device), returns_to_go],
