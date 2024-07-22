@@ -1,45 +1,21 @@
 import gym
-from agents import TestAgent
+from agents import MemXY
 from functools import partial
+import random
 env = gym.make('custom_envs.iterated_games.iterated_prisoner:IteratedPrisoner-v0')
 
 env.reset()
 
-t1 = TestAgent()
-t2 = TestAgent()
+t1 = MemXY(1, 2, 'dcCDCDDCDD')
 
-for i in range(15):
-    a1 = t1.get_action()
-    a2 = t2.get_action()
-    _, rew, _, _ = env.step(a1, a2)
-    
-    print(rew)
-    
-    t1.update(a1, a2)
-    t2.update(a2, a1)
-    
-    
-print("t1's own history", t1.own_history)
-print("t1's opponent history", t1.opponent_history)
-print("t1's counter", t1.counter)
-print("t2's own history", t2.own_history)
-print("t2's opponent history", t2.opponent_history)
-print("t2's counter", t2.counter)
+print(t1.first_moves)
+print(t1.dictionary_values)
+print(t1.dictionary)
 
-t1_history = [1, 1, 1, 1]
-t2_history = [0, 0, 0, 0]
+for i in range(10):
+    act = t1.get_action()
+    rand = random.choice([0, 1])
+    t1.update(act, rand)
+    print(act, rand)
 
-t1.force_history(t1_history, t2_history)
-t2.force_history(t2_history, t1_history)
-
-print("t1's own history", t1.own_history)
-print("t1's opponent history", t1.opponent_history)
-print("t1's counter", t1.counter)
-print("t2's own history", t2.own_history)
-print("t2's opponent history", t2.opponent_history)
-print("t2's counter", t2.counter)
-
-variable_class = partial(TestAgent, counter=10)
-instance = variable_class()
-print("instance counter", instance.counter)
 

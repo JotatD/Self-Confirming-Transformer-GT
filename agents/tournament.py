@@ -21,8 +21,8 @@ def game(env, player_1, player_2, game_horizon=100):
         
         _, rewards, done, _ = env.step(a1, a2)
         
-        player_1.update(a1, a2)
-        player_2.update(a2, a1)
+        player_1.update(a1, a2, rewards['player_1'])
+        player_2.update(a2, a1, rewards['player_2'])
         
         actions_p1[timestep] = a1
         actions_p2[timestep] = a2
@@ -35,7 +35,7 @@ def game(env, player_1, player_2, game_horizon=100):
     return actions_p1, actions_p2, rewards_p1, rewards_p2
         
 
-def tournament(players, env, n_games=100, game_horizon=100):
+def tournament(players, env, n_games=100, game_horizon=100, controller_name = None):
     names = list(players.keys())
     n_players = len(names)
     
@@ -52,8 +52,15 @@ def tournament(players, env, n_games=100, game_horizon=100):
             p1_idx, p2_idx = names.index(player_1_name), names.index(player_2_name)
             print(f'Playing {player_1_name} vs {player_2_name}')
             for game_num in range(n_games):
-                player_1 = players[player_1_name]()
-                player_2 = players[player_2_name]()
+                if player_1_name == controller_name:
+                    player_1.reset_memory()
+                else:
+                    player_1 = players[player_1_name]()
+                    
+                if player_2_name == controller_name:
+                   player_2.reset_memory()
+                else: 
+                    player_2 = players[player_2_name]()
                 
                 actions_p1, actions_p2, rewards_p1, rewards_p2 = game(env, player_1, player_2, game_horizon)
                 player_1_history[p1_idx, p2_idx, game_num] = actions_p1
@@ -63,7 +70,51 @@ def tournament(players, env, n_games=100, game_horizon=100):
             results.loc[player_1_name, player_2_name] = np.sum(player_1_rewards[p1_idx, p2_idx])
     
     return results, player_1_history, player_2_history, player_1_rewards, player_2_rewards
+
+def gen_to_list(gen):
+    final_list = []
+    for k, v in gen.items():
+        final_list += [k]*v
+    return final_list
+
+def evolution_step(gen, players, game_horizon, controller_name=None):
+    lis = gen.keys()
+    points = {k: 0 for k in players.keys()}
+    
+    for player_1_name in lis:
+        for player_2_name in lis:
+            if player_1_name == controller_name:
+                    player_1.reset_memory()
+            else:
+                player_1 = players[player_1_name]()
+                
+            if player_2_name == controller_name:
+                player_2.reset_memory()
+            else: 
+                player_2 = players[player_2_name]()
+                
+            _, _, rewards_p1, rewards_p2 = game(env, player_1, player_2, game_horizon)
+            #the number of simluated games is equal to p_1 generation.
+            points[player_1_name] = rewards_p1.sum() * gen[player_1_name] * gen[player_2_name] /2 
+            points[player_2_name] = rewards_p2.sum() * gen[player_2_name] * gen[player_1_name] /2
             
+    total_points = sum(points.values())
+    total_population = sum(gen.values())
+    print(total_points)
+    print(total_population)
+    new_gen = dict(sorted({k: int(points[k] / total_points * total_population) for k in players.keys()}.items(), key=lambda x: x[1], reverse=True))
+    return new_gen 
+
+def evolutionary_tournament(players, init_pop, game_horizon, step_num, controller_name=None):
+    gen = {k: init_pop for k in players.keys()}
+    print('='*10, f'step {-1}', '='*10)
+    print(gen)
+    for step in range(step_num):
+        gen = evolution_step(gen, players, game_horizon, controller_name)
+        print('='*10, f'step {step}', '='*10)
+        print(gen)
+    return gen
+         
             
     
 if __name__ == '__main__':
@@ -72,7 +123,6 @@ if __name__ == '__main__':
         'all_d': AllD,
         'all_c': AllC,
         'tit_for_tat': TitForTat,
-        'test_agent': TestAgent,
         'spiteful': Spiteful,
         'soft_majo': SoftMajo,
         'hard_majo': HardMajo,
@@ -88,10 +138,24 @@ if __name__ == '__main__':
         'prober': Prober,
         'mem2': partial(Mem2, env_dict = env.payoff_dictionary)
     }
+  
+    players = {
+        'p10_1': partial(MemXY, 1, 2, 'ddCCDDDDDC'),
+        'p10_3': partial(MemXY, 1, 2, 'ddDCDDDDDC'),
+        'p10_5': partial(MemXY, 1, 2, 'ddDDCDDDDC'),
+        'p10_7': partial(MemXY, 1, 2, 'ddDCCDDDDC'),
+        'p10_10': partial(MemXY, 1, 2, 'ddDCDCDDDC'),
+        'p11_1': partial(MemXY, 2, 1, 'dcDDDDDCDD'),
+        'p11_4': partial(MemXY, 2, 1, 'ddDCDDDDDC'),
+        'p11_6': partial(MemXY, 2, 1, 'cdCCDDDDDC'),
+        'p11_8': partial(MemXY, 2, 1, 'cdDCDDDDDC'),
+        'p11_10': partial(MemXY, 2, 1, 'dcCDDDDCDD'),        
+    }
+    
     config = {
         'players': list(players.keys()),
         'env': 'custom_envs.iterated_games.iterated_prisoner:IteratedPrisoner-v0',
-        'n_games': 100,
+        'n_games': 1,
         'game_horizon': 100
     }
     env = gym.make(config['env'])
@@ -101,6 +165,7 @@ if __name__ == '__main__':
     export_base = 'pd_dataset/'
     export_folder = os.path.join(export_base, datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
     os.makedirs(export_folder, exist_ok=True)
+    # gen = evolutionary_tournament(players, init_pop=100, game_horizon=100, step_num=25, controller_name=None)
     results, player_1_history, player_2_history, player_1_rewards, player_2_rewards = tournament(players=players, env=env, n_games=config['n_games'], game_horizon=config['game_horizon'])
     #save results
     np.save(os.path.join(export_folder, 'acs_0.npy'), player_1_history)

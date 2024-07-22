@@ -9,7 +9,7 @@ class PrisonerAgent():
     def get_action():
         raise NotImplementedError()
     
-    def update(self, own_action, opponent_action):
+    def update(self, own_action, opponent_action, rewards=None):
         self.own_history.append(own_action)
         self.opponent_history.append(opponent_action)
         
@@ -33,7 +33,7 @@ class TestAgent(PrisonerAgent):
     def get_action(self):
         return int(self.counter % 2)
     
-    def update(self, own_action, opponent_action):
+    def update(self, own_action, opponent_action, rewards=None):
         super().update(own_action, opponent_action)
         self.counter += 1
         
@@ -62,7 +62,7 @@ class Spiteful(PrisonerAgent):
         else:
             return 0
         
-    def update(self, own_action, opponent_action):
+    def update(self, own_action, opponent_action, rewards=None):
         super().update(own_action, opponent_action)
         if opponent_action == 1:
             self.opponent_defected = True
@@ -84,7 +84,7 @@ class SoftMajo(PrisonerAgent):
         else:
             return 1
     
-    def update(self, own_action, opponent_action):
+    def update(self, own_action, opponent_action, rewards=None):
         super().update(own_action, opponent_action)
         if opponent_action == 1:
             self.num_oponent_defection += 1
@@ -105,7 +105,7 @@ class HardMajo(PrisonerAgent):
         else:
             return 0
     
-    def update(self, own_action, opponent_action):
+    def update(self, own_action, opponent_action, rewards=None):
         super().update(own_action, opponent_action)
         if opponent_action == 1:
             self.num_oponent_defection += 1
@@ -185,7 +185,7 @@ class SlowTFT(PrisonerAgent):
     def get_action(self):
         return int(self.defect)
         
-    def update(self, own_action, opponent_action):
+    def update(self, own_action, opponent_action, rewards=None):
         super().update(own_action, opponent_action)
         if len(self.own_history) > 1:
             if self.opponent_history[-1] == 1 and self.opponent_history[-2] == 1:
@@ -205,7 +205,7 @@ class Gradual(PrisonerAgent):
     def get_action(self):
         return int(self.num_defections_before_peace > 0)
                 
-    def update(self, own_action, opponent_action):
+    def update(self, own_action, opponent_action, rewards=None):
         super().update(own_action, opponent_action)
         self.num_oponent_defections = sum(self.opponent_history)
                 
@@ -241,7 +241,7 @@ class Prober(PrisonerAgent):
             return self.opponent_history[-1]
             
     
-    def update(self, own_action, opponent_action):
+    def update(self, own_action, opponent_action, rewards=None):
         super().update(own_action, opponent_action)
         if len(self.own_history) == 3:
             if self.opponent_history[1] == 0 and self.opponent_history[2] == 0:
@@ -261,7 +261,7 @@ class Mem2(PrisonerAgent):
     def get_action(self):
         return self.sub_player.get_action()
     
-    def update(self, own_action, opponent_action):
+    def update(self, own_action, opponent_action, rewards=None):
         super().update(own_action, opponent_action)
         self.sub_player.update(own_action, opponent_action)
         self.counter += 1
@@ -284,3 +284,45 @@ class Mem2(PrisonerAgent):
     def reset(self):
         self.__init__(self.env_dict)
             
+class MemXY(PrisonerAgent):
+    def __init__(self, x, y, genotype):
+        super().__init__()
+        self.x = x
+        self.y = y
+        self.genotype = genotype
+        counter = 0
+        for char in genotype:
+            if char in ['c', 'd']:
+                counter += 1
+            else:
+                break
+        for char in genotype[counter:]:
+            assert char in ['C', 'D']
+        
+        self.first_moves = list(map(lambda x: int(x == 'd'), genotype[:counter]))
+        self.dictionary_values = list(map(lambda x: int(x == 'D'), genotype[counter:]))
+        
+        assert len(self.first_moves) == max(x, y)
+        assert len(self.dictionary_values) == 2 ** (x+y)
+        
+        self.dict_counter = 0
+        self.dictionary = {}
+        self.build_dictionary('', 1)
+        
+    def build_dictionary(self, current_str, depth):
+        if depth == self.x + self.y:
+            self.dictionary[current_str +'0'] = self.dictionary_values[self.dict_counter]
+            self.dict_counter += 1
+            self.dictionary[current_str +'1'] = self.dictionary_values[self.dict_counter]
+            self.dict_counter += 1
+        else:
+            self.build_dictionary(current_str + '0', depth + 1)
+            self.build_dictionary(current_str + '1', depth + 1)
+            
+    def get_action(self):
+        if (len(self.first_moves) > 0):
+            return int(self.first_moves.pop(0) == 1)
+        else:
+            key = "".join(map(str, self.own_history[-self.x:])) \
+                + "".join(map(str, self.opponent_history[-self.y:]))
+            return int(self.dictionary[key] == 1)     

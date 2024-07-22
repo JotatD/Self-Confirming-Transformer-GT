@@ -14,9 +14,6 @@ import pickle as pkl
 import json
 
 
-  
-
-
 def game(env, model, player_2, game_horizon=100):
     env.reset()    
     actions_p1 = np.zeros(game_horizon)
@@ -176,6 +173,19 @@ def evaluation(variant):
         'gradual': Gradual,
         'prober': Prober,
         'mem2': partial(Mem2, env_dict = env.payoff_dictionary)
+    }
+    
+    players = {
+        'p10_1': partial(MemXY, 1, 2, 'ddCCDDDDDC'),
+        'p10_3': partial(MemXY, 1, 2, 'ddDCDDDDDC'),
+        'p10_5': partial(MemXY, 1, 2, 'ddDDCDDDDC'),
+        'p10_7': partial(MemXY, 1, 2, 'ddDCCDDDDC'),
+        'p10_10': partial(MemXY, 1, 2, 'ddDCDCDDDC'),
+        'p11_1': partial(MemXY, 2, 1, 'dcDDDDDCDD'),
+        'p11_4': partial(MemXY, 2, 1, 'ddDCDDDDDC'),
+        'p11_6': partial(MemXY, 2, 1, 'cdCCDDDDDC'),
+        'p11_8': partial(MemXY, 2, 1, 'cdDCDDDDDC'),
+        'p11_10': partial(MemXY, 2, 1, 'dcCDDDDCDD'),        
     }
     
     all_history = model_round_roubbin(env, dt_c, players, n_games, K)

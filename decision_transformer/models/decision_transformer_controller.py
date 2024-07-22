@@ -40,6 +40,10 @@ class DecisionTransformerGTController():
         curact = curact.argmax().item()
         return curact, opoact_pred
     
+    def get_action_(self):
+        curact, _ = self.get_action_and_prediction()
+        return curact
+    
     def update(self, opoact, curact, reward):
         self.total_rewards += reward
         ret_to_go = (self.rtg - self.total_rewards/self.scale).reshape(self.n, 1, 1)
